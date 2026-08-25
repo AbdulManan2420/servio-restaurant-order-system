@@ -1,6 +1,7 @@
 'use client';
 
 import { initializeApp, getApps } from 'firebase/app';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { addDoc, collection, doc, getFirestore, onSnapshot, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import type { MenuItem, Order, OrderStatus } from '../types';
 import { DEFAULT_MENU, SAMPLE_ORDERS } from '../types';
@@ -15,7 +16,25 @@ const config = {
 };
 
 export const isFirebaseConfigured = Boolean(config.apiKey && config.projectId && config.appId);
-const database = isFirebaseConfigured ? getFirestore(getApps()[0] ?? initializeApp(config)) : null;
+const app = isFirebaseConfigured ? (getApps()[0] ?? initializeApp(config)) : null;
+const database = app ? getFirestore(app) : null;
+const auth = app ? getAuth(app) : null;
+
+export type ProtectedRole = 'kitchen' | 'admin';
+export function subscribeAuth(callback: (role: ProtectedRole | null) => void) {
+  if (!auth) { callback(null); return () => undefined; }
+  return onAuthStateChanged(auth, user => {
+    if (user?.email === 'admin@servio.app') callback('admin');
+    else if (user?.email === 'kitchen@servio.app') callback('kitchen');
+    else callback(null);
+  });
+}
+export async function loginForRole(role: ProtectedRole, password: string) {
+  if (!auth) throw new Error('Firebase Authentication is not configured.');
+  const credential = await signInWithEmailAndPassword(auth, `${role}@servio.app`, password);
+  if (credential.user.email !== `${role}@servio.app`) { await signOut(auth); throw new Error('This account cannot access that workspace.'); }
+}
+export async function logoutUser() { if (auth) await signOut(auth); }
 
 function readLocal<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;

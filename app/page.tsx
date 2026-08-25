@@ -3,13 +3,14 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   BarChart3, Check, ChefHat, ChevronRight, CircleDollarSign, Clock3,
-  Flame, LayoutGrid, Minus, PackageCheck, Plus, Search, Settings2,
+  Flame, LayoutGrid, LockKeyhole, LogOut, Minus, PackageCheck, Plus, Search, Settings2,
   ShoppingBag, Store, UtensilsCrossed, X,
 } from 'lucide-react';
 import {
-  createOrder, isFirebaseConfigured, saveMenuItem, subscribeMenu,
+  createOrder, isFirebaseConfigured, loginForRole, logoutUser, saveMenuItem, subscribeAuth, subscribeMenu,
   subscribeOrders, updateMenuItem, updateOrderStatus,
 } from './services/firebase';
+import type { ProtectedRole } from './services/firebase';
 import type { CartItem, MenuItem, Order, OrderStatus, Role, ServiceMode } from './types';
 import { DEFAULT_MENU, SAMPLE_ORDERS } from './types';
 
@@ -33,9 +34,12 @@ export default function Home() {
   const [query, setQuery] = useState('');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [toast, setToast] = useState('');
+  const [authenticatedRole, setAuthenticatedRole] = useState<ProtectedRole | null>(null);
+  const [loginRole, setLoginRole] = useState<ProtectedRole | null>(null);
 
   useEffect(() => subscribeMenu(setMenu), []);
   useEffect(() => subscribeOrders(setOrders), []);
+  useEffect(() => subscribeAuth(setAuthenticatedRole), []);
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(''), 2800);
@@ -76,9 +80,16 @@ export default function Home() {
     await updateOrderStatus(id, status);
   };
 
+  const selectRole = (nextRole: Role) => {
+    if (nextRole === 'waiter' || authenticatedRole === nextRole) setRole(nextRole);
+    else setLoginRole(nextRole);
+  };
+
+  const logout = async () => { await logoutUser(); setRole('waiter'); setToast('Signed out securely'); };
+
   return (
     <main className="app-shell">
-      <Topbar role={role} setRole={setRole} />
+      <Topbar role={role} setRole={selectRole} authenticatedRole={authenticatedRole} logout={logout} />
       {role === 'waiter' && <WaiterView menu={filteredMenu} cart={cart} table={table} setTable={setTable}
         serviceMode={serviceMode} setServiceMode={setServiceMode} customerName={customerName} setCustomerName={setCustomerName}
         category={category} setCategory={setCategory} query={query} setQuery={setQuery}
@@ -86,21 +97,28 @@ export default function Home() {
       {role === 'kitchen' && <KitchenView orders={orders} changeStatus={changeStatus} />}
       {role === 'admin' && <AdminView orders={orders} menu={menu} setToast={setToast} />}
       {editingItem && <CustomizationModal item={editingItem} onClose={() => setEditingItem(null)} onAdd={addCustomizedItem} />}
+      {loginRole && <LoginModal role={loginRole} onClose={() => setLoginRole(null)} onSuccess={() => { setRole(loginRole); setLoginRole(null); setToast('Workspace unlocked'); }} />}
       {toast && <div className="toast" role="status"><Check size={17} />{toast}</div>}
     </main>
   );
 }
 
-function Topbar({ role, setRole }: { role: Role; setRole: (role: Role) => void }) {
+function Topbar({ role, setRole, authenticatedRole, logout }: { role: Role; setRole: (role: Role) => void; authenticatedRole: ProtectedRole | null; logout: () => void }) {
   return <header className="topbar">
     <div className="brand"><span className="brand-mark"><UtensilsCrossed size={20} /></span><div><strong>Servio</strong><small>Restaurant OS</small></div></div>
     <nav className="role-tabs" aria-label="Choose workspace">
       <button className={role === 'waiter' ? 'active' : ''} onClick={() => setRole('waiter')}>Waiter / Customer</button>
-      <button className={role === 'kitchen' ? 'active' : ''} onClick={() => setRole('kitchen')}>Kitchen</button>
-      <button className={role === 'admin' ? 'active' : ''} onClick={() => setRole('admin')}>Admin</button>
+      <button className={role === 'kitchen' ? 'active' : ''} onClick={() => setRole('kitchen')}>Kitchen {authenticatedRole !== 'kitchen' && <LockKeyhole size={12} />}</button>
+      <button className={role === 'admin' ? 'active' : ''} onClick={() => setRole('admin')}>Admin {authenticatedRole !== 'admin' && <LockKeyhole size={12} />}</button>
     </nav>
-    <div className="shift"><span className="status-dot" />Dinner shift <strong>Open</strong><span className={`sync-badge ${isFirebaseConfigured ? 'live' : ''}`}>{isFirebaseConfigured ? 'Firebase live' : 'Demo mode'}</span></div>
+    <div className="shift"><span className="status-dot" />Dinner shift <strong>Open</strong>{authenticatedRole && <button className="logout-button" onClick={logout} title="Sign out"><LogOut size={14} />Sign out</button>}<span className={`sync-badge ${isFirebaseConfigured ? 'live' : ''}`}>{isFirebaseConfigured ? 'Firebase live' : 'Demo mode'}</span></div>
   </header>;
+}
+
+function LoginModal({ role, onClose, onSuccess }: { role: ProtectedRole; onClose: () => void; onSuccess: () => void }) {
+  const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [loading, setLoading] = useState(false);
+  const submit = async (event: FormEvent) => { event.preventDefault(); setLoading(true); setError(''); try { await loginForRole(role, password); onSuccess(); } catch { setError('Incorrect password. Please try again.'); setLoading(false); } };
+  return <div className="modal-backdrop"><form className="modal auth-modal" onSubmit={submit}><button type="button" className="icon-button modal-close" onClick={onClose} aria-label="Close"><X size={19} /></button><span className="auth-icon"><LockKeyhole size={22} /></span><p className="eyebrow">Protected workspace</p><h2>{role === 'admin' ? 'Admin' : 'Kitchen'} login</h2><p className="modal-description">Enter the {role} password to continue.</p><label><span>Password</span><input type="password" autoFocus value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter password" /></label>{error && <p className="auth-error">{error}</p>}<button className="modal-add" disabled={loading}>{loading ? 'Checking...' : `Unlock ${role}`}</button></form></div>;
 }
 
 type WaiterProps = {
