@@ -1,12 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'admin@servio.app';
+    }
+
+    function isStaff() {
+      return request.auth != null && request.auth.token.email in ['admin@servio.app', 'kitchen@servio.app'];
+    }
+
     match /orders/{orderId} {
-      allow read, create, update: if true;
+      allow read, create: if true;
+      allow update: if isStaff();
+      allow delete: if isAdmin();
     }
     match /menu/{itemId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
   }
 }

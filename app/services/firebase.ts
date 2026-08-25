@@ -50,7 +50,7 @@ export function subscribeMenu(callback: (menu: MenuItem[]) => void) {
   if (database) return onSnapshot(collection(database, 'menu'), snapshot => callback(snapshot.empty ? DEFAULT_MENU : snapshot.docs.map(entry => ({ ...entry.data(), id: entry.id }) as MenuItem)));
   const update = () => callback(readLocal('menu', DEFAULT_MENU)); update(); window.addEventListener('servio:menu', update); return () => window.removeEventListener('servio:menu', update);
 }
-export async function createOrder(order: Order) { if (database) await addDoc(collection(database, 'orders'), { ...order, id: undefined }); else writeLocal('orders', [order, ...readLocal('orders', SAMPLE_ORDERS)]); }
+export async function createOrder(order: Order) { if (database) { const { id: _localId, ...data } = order; void _localId; await addDoc(collection(database, 'orders'), data); } else writeLocal('orders', [order, ...readLocal('orders', SAMPLE_ORDERS)]); }
 export async function updateOrderStatus(id: string, status: OrderStatus) { if (database) await updateDoc(doc(database, 'orders', id), { status }); else writeLocal('orders', readLocal<Order[]>('orders', SAMPLE_ORDERS).map(order => order.id === id ? { ...order, status } : order)); }
 export async function updateMenuItem(id: string, values: Partial<MenuItem>) { if (database) await updateDoc(doc(database, 'menu', id), values); else writeLocal('menu', readLocal<MenuItem[]>('menu', DEFAULT_MENU).map(item => item.id === id ? { ...item, ...values } : item)); }
 export async function saveMenuItem(item: MenuItem) { if (database) await setDoc(doc(database, 'menu', item.id), item); else writeLocal('menu', [...readLocal<MenuItem[]>('menu', DEFAULT_MENU), item]); }
