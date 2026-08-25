@@ -8,10 +8,11 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
+    "build:firebase": "next build",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "firebase:status": "firebase projects:list",
-    "firebase:deploy": "firebase deploy --only firestore:rules"
+    "firebase:deploy": "npm run build:firebase && firebase deploy --only hosting,firestore:rules"
   },
   "dependencies": {
     "firebase": "^12.18.0",

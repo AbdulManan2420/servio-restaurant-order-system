@@ -17,6 +17,8 @@ npm run firebase:status
 npm run firebase:deploy
 ```
 
+Firebase Hosting URL: `https://servio-order-system-2420.web.app`
+
 The included rules allow the three workspaces to share orders during prototyping. Before opening the app to the public, add Firebase Authentication and restrict writes by role.
 
 ## Run locally
