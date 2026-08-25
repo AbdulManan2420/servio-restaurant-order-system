@@ -1,8 +1,9 @@
 export type Role = 'waiter' | 'kitchen' | 'admin';
+export type ServiceMode = 'dine_in' | 'takeaway';
 export type OrderStatus = 'new' | 'preparing' | 'ready' | 'served';
 export type MenuItem = { id: string; name: string; description: string; category: string; price: number; color: string; available: boolean; customizations: string[] };
 export type CartItem = MenuItem & { cartId: string; quantity: number; customization: string[]; note: string };
-export type Order = { id: string; orderNumber: string; table: string; items: CartItem[]; status: OrderStatus; createdAt: number; waiter: string; note: string; total: number };
+export type Order = { id: string; orderNumber: string; serviceMode: ServiceMode; table: string; customerName: string; items: CartItem[]; status: OrderStatus; createdAt: number; waiter: string; note: string; total: number };
 
 export const DEFAULT_MENU: MenuItem[] = [
   { id:'burger', name:'Smoky Chicken Burger', description:'Grilled chicken, cheddar, house sauce', category:'Fast food', price:890, color:'#f0a96b', available:true, customizations:['Extra cheese (+ Rs. 100)','No onion','Sauce on the side','Make it spicy'] },
@@ -17,8 +18,8 @@ export const DEFAULT_MENU: MenuItem[] = [
 
 const sampleCart = (name:string, quantity:number, note='') => ({ ...DEFAULT_MENU.find(i => i.name === name)!, cartId:`sample-${name}`, quantity, customization:note ? [note] : [], note:'' });
 export const SAMPLE_ORDERS: Order[] = [
-  { id:'sample-1', orderNumber:'#104', table:'7', items:[sampleCart('Chicken Biryani',2,'Extra spicy'),sampleCart('Mint Lemonade',2,'Less ice')], status:'preparing', createdAt:Date.now()-11*60000, waiter:'Hamza',note:'Serve drinks first',total:1911 },
-  { id:'sample-2', orderNumber:'#105', table:'3', items:[sampleCart('Smoky Chicken Burger',1,'No onion'),sampleCart('Crispy Loaded Fries',1)], status:'new', createdAt:Date.now()-5*60000, waiter:'Areeba',note:'',total:1502 },
-  { id:'sample-3', orderNumber:'#103', table:'15', items:[sampleCart('Pepper Beef Steak',2,'Medium'),sampleCart('Mint Lemonade',2)], status:'ready', createdAt:Date.now()-18*60000, waiter:'Hamza',note:'One steak without pepper sauce',total:4641 },
-  { id:'sample-4', orderNumber:'#102', table:'9', items:[sampleCart('Fettuccine Alfredo',2)], status:'served', createdAt:Date.now()-42*60000, waiter:'Areeba',note:'',total:2289 },
+  { id:'sample-1', orderNumber:'#104', serviceMode:'dine_in', table:'7', customerName:'', items:[sampleCart('Chicken Biryani',2,'Extra spicy'),sampleCart('Mint Lemonade',2,'Less ice')], status:'preparing', createdAt:Date.now()-11*60000, waiter:'Hamza',note:'Serve drinks first',total:1911 },
+  { id:'sample-2', orderNumber:'#105', serviceMode:'takeaway', table:'', customerName:'Ahmed', items:[sampleCart('Smoky Chicken Burger',1,'No onion'),sampleCart('Crispy Loaded Fries',1)], status:'new', createdAt:Date.now()-5*60000, waiter:'Areeba',note:'',total:1502 },
+  { id:'sample-3', orderNumber:'#103', serviceMode:'dine_in', table:'15', customerName:'', items:[sampleCart('Pepper Beef Steak',2,'Medium'),sampleCart('Mint Lemonade',2)], status:'ready', createdAt:Date.now()-18*60000, waiter:'Hamza',note:'One steak without pepper sauce',total:4641 },
+  { id:'sample-4', orderNumber:'#102', serviceMode:'dine_in', table:'9', customerName:'', items:[sampleCart('Fettuccine Alfredo',2)], status:'served', createdAt:Date.now()-42*60000, waiter:'Areeba',note:'',total:2289 },
 ];
