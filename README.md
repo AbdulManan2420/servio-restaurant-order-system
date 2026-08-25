@@ -8,14 +8,16 @@ Servio is a responsive restaurant workflow app with three workspaces:
 
 ## Firebase setup
 
-The app works immediately in local demo mode. To enable live Firestore sync across devices:
+The app is connected to the `servio-order-system-2420` Firebase project. The Firestore database is deployed in `asia-south1` and the local web configuration is stored in the ignored `.env.local` file.
 
-1. Create a Firebase project and enable Cloud Firestore.
-2. Copy `.env.example` to `.env.local` and add the web app credentials from Firebase Project Settings.
-3. Deploy `firestore.rules` during development.
-4. Restart the development server.
+Firebase CLI is installed as a project dependency. Useful commands:
 
-The included rules are intentionally open for prototyping. Before production, add Firebase Authentication and restrict writes by role.
+```bash
+npm run firebase:status
+npm run firebase:deploy
+```
+
+The included rules allow the three workspaces to share orders during prototyping. Before opening the app to the public, add Firebase Authentication and restrict writes by role.
 
 ## Run locally
 
